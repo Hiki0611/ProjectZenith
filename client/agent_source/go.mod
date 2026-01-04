@@ -11,5 +11,5 @@ require (
 	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
 	github.com/vova616/screenshot v0.0.0-20220801010501-56c10359473c // indirect
-	golang.org/x/sys v0.24.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
 )

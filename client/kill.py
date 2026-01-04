@@ -1,52 +1,79 @@
 import os
+import sys
 import subprocess
+import platform
 import shutil
 import time
 
-# --- ТЕ ЖЕ НАСТРОЙКИ, ЧТО В АГЕНТЕ ---
+# Данные должны совпадать с теми, что в клиенте
+REG_NAME = "WinDefenderUpdater"
 EXE_NAME = "WinDefenderSmart.exe"
-REG_NAME = "WinDefenderUpdate"
-# ------------------------------------
+FOLDER_NAME = "DefenderUpdate"
 
 def kill_process(name):
-    print(f"[*] Попытка завершить процесс {name}...")
+    """Принудительное завершение процесса по имени"""
     try:
-        # Принудительно завершаем дерево процессов
-        subprocess.run(['taskkill', '/F', '/IM', name, '/T'], capture_output=True)
-        print("[+] Процесс остановлен.")
+        if platform.system() == "Windows":
+            # Используем taskkill без окна консоли
+            subprocess.run(f"taskkill /F /IM {name} /T", 
+                           shell=True, 
+                           capture_output=True, 
+                           creationflags=0x08000000) # CREATE_NO_WINDOW
+        else:
+            subprocess.run(f"pkill -f {name}", shell=True)
+        print(f"[*] Process {name} terminated.")
     except Exception as e:
-        print(f"[-] Ошибка при остановке: {e}")
+        print(f"[!] Error killing process: {e}")
 
-def remove_from_registry(reg_name):
-    print(f"[*] Удаление из автозагрузки...")
-    reg_path = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run"
-    try:
-        subprocess.run(['reg', 'delete', reg_path, '/v', reg_name, '/f'], capture_output=True)
-        print("[+] Запись в реестре удалена.")
-    except Exception as e:
-        print(f"[-] Ошибка реестра: {e}")
+def remove_from_startup():
+    """Удаление из реестра автозагрузки"""
+    if platform.system() == "Windows":
+        try:
+            import winreg
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                                 r"Software\Microsoft\Windows\CurrentVersion\Run", 
+                                 0, winreg.KEY_SET_VALUE)
+            winreg.DeleteValue(key, REG_NAME)
+            winreg.CloseKey(key)
+            print("[*] Registry startup key removed.")
+        except FileNotFoundError:
+            print("[?] Registry key already gone.")
+        except Exception as e:
+            print(f"[!] Registry error: {e}")
 
-def remove_files():
-    appdata = os.getenv("APPDATA")
-    target_dir = os.path.join(appdata, "Microsoft", "Windows", "Defender")
+def wipe_files():
+    """Полное удаление папки с файлами"""
+    app_data = os.getenv("APPDATA")
+    target_dir = os.path.join(app_data, "Microsoft", "Windows", FOLDER_NAME)
     
-    print(f"[*] Очистка файлов в {target_dir}...")
     if os.path.exists(target_dir):
         try:
-            # Ждем секунду, чтобы дескрипторы файлов освободились после taskkill
+            # Небольшая пауза, чтобы процесс успел закрыться
             time.sleep(1)
             shutil.rmtree(target_dir)
-            print("[+] Файлы агента полностью удалены.")
+            print(f"[*] Directory {target_dir} wiped.")
         except Exception as e:
-            print(f"[-] Ошибка при удалении папки: {e}")
+            print(f"[!] File removal error: {e}")
     else:
-        print("[!] Папка агента не найдена.")
+        print("[?] Directory not found.")
+
+def main():
+    print("--- PROJECT ZENITH CLEANER ---")
+    
+    # 1. Останавливаем работу программы
+    kill_process(EXE_NAME)
+    kill_process("pythonw.exe") # Если запущен как .pyw
+    
+    # 2. Чистим автозагрузку
+    remove_from_startup()
+    
+    # 3. Удаляем файлы
+    wipe_files()
+    
+    print("[+] Cleanup complete. Zenith removed.")
+    
+    # Самоликвидация (опционально)
+    # os.remove(sys.argv[0]) 
 
 if __name__ == "__main__":
-    print("=== ZENITH CLEANER TOOL ===")
-    kill_process(EXE_NAME)
-    remove_from_registry(REG_NAME)
-    remove_files()
-    print("="*27)
-    print("[УСПЕХ] Система очищена.")
-    input("Нажми Enter, чтобы выйти...")
+    main()

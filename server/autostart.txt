@@ -1,0 +1,13 @@
+[Unit]
+Description=Zenith C2 Go Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/Zenith
+ExecStart=/root/Zenith/zenith_server
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

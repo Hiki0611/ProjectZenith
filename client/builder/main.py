@@ -13,7 +13,7 @@ def load_config(config_file):
     return config
 
 def build_agent():
-    # Настройка путей относительно папки скрипта
+
     current_dir = Path(__file__).resolve().parent
     agent_dir = current_dir.parent / "agent_source"
     conf_path = current_dir / "config.conf"
